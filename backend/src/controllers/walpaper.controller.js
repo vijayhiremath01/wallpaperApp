@@ -1,10 +1,22 @@
-const imageKit = require("../config/imageKit");
 const Image = require("../models/images.model");
+const { redisClient } = require("../config/redis");
+
+async function invalidateWallpapersCache() {
+  try {
+    const iter = redisClient.scanIterator({ MATCH: "wallpapers:page:*" });
+    for await (const key of iter) {
+      await redisClient.del(key);
+    }
+  } catch (e) {
+    console.error("Failed to invalidate wallpapers cache", e);
+  }
+}
 
 
 // Upload wallpaper
 const uploadImage = async (req, res) => {
   try {
+    const imageKit = require("../config/imageKit");
 
     if (!req.file) {
       return res.status(400).json({
@@ -24,6 +36,7 @@ const uploadImage = async (req, res) => {
     const newImage = await Image.create({
       imageUrl: uploadResponse.url
     });
+    await invalidateWallpapersCache();
 
     res.status(201).json({
       success: true,
@@ -52,21 +65,33 @@ const getWallpapers = async (req, res) => {
 
     const skip = (page - 1) * limit;
 
+    const cacheKey = `wallpapers:page:${page}`;
+    const cached = await redisClient.get(cacheKey);
+    if (cached) {
+      const parsed = JSON.parse(cached);
+      return res.status(200).json(parsed);
+    }
+
     const wallpapers = await Image.find()
       .sort({ createdAt: -1 })
+      .select("imageUrl downloads createdAt")
       .skip(skip)
       .limit(limit)
       .lean();
 
     const total = await Image.countDocuments();
 
-    res.status(200).json({
+    const payload = {
       success: true,
       page,
       limit,
       total,
       data: wallpapers
+    };
+    await redisClient.set(cacheKey, JSON.stringify(payload), {
+      EX: 300
     });
+    res.status(200).json(payload);
 
   } catch (error) {
 
@@ -89,7 +114,7 @@ const downloadWallpaper = async (req, res) => {
     const wallpaper = await Image.findByIdAndUpdate(
       id,
       { $inc: { downloads: 1 } },
-      { new: true }
+      { returnDocument: "after" }
     );
 
     if (!wallpaper) {
