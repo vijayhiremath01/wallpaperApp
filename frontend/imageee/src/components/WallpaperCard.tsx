@@ -1,5 +1,5 @@
 import { Image } from 'expo-image';
-import React, { memo } from 'react';
+import React, { memo, useMemo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import type { Wallpaper } from '@/types/api.types';
@@ -11,12 +11,25 @@ type Props = {
   onPress: (item: Wallpaper) => void;
 };
 
+function hashToUnit(str: string) {
+  let h = 2166136261;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return (h >>> 0) / 4294967295;
+}
+
 function WallpaperCardBase({ item, onPress }: Props) {
+  const height = useMemo(() => {
+    const u = hashToUnit(item._id ?? item.imageUrl);
+    return Math.round(220 + u * 100); // 220-320
+  }, [item._id, item.imageUrl]);
   return (
     <Pressable
       onPress={() => onPress(item)}
       style={({ pressed }) => [styles.pressable, pressed && styles.pressed]}>
-      <View style={styles.card}>
+      <View style={[styles.card, { height }]}>
         <Image
           source={{ uri: item.imageUrl }}
           style={styles.image}
@@ -53,5 +66,4 @@ const styles = StyleSheet.create({
     height: '100%',
   },
 });
-
 

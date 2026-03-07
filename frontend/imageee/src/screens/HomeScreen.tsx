@@ -14,7 +14,17 @@ import type { RootStackScreenProps } from '@/navigation/RootNavigator';
 type Props = RootStackScreenProps<'Home'>;
 
 export function HomeScreen({ navigation }: Props) {
-  const { wallpapers, isLoading, isFetching, isError, error, refetch } = useWallpapers();
+  const {
+    wallpapers,
+    isLoading,
+    isFetching,
+    isFetchingNextPage,
+    fetchNextPage,
+    hasNextPage,
+    isError,
+    error,
+    refetch,
+  } = useWallpapers();
 
   const onPress = useCallback(
     (item: Wallpaper) => {
@@ -37,6 +47,12 @@ export function HomeScreen({ navigation }: Props) {
 
   const keyExtractor = useCallback((item: Wallpaper) => item._id, []);
 
+  const onEndReached = useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
   const ListHeaderComponent = (
     <SafeAreaView edges={['top']} style={styles.safeHeader}>
       <View style={styles.headerRow}>
@@ -54,13 +70,11 @@ export function HomeScreen({ navigation }: Props) {
   );
 
   if (isError && wallpapers.length === 0) {
-    const message =
-      (error && typeof error === 'object' && 'message' in error && (error as { message?: unknown }).message) ||
-      'Failed to load wallpapers. Check that the backend is running.';
+    const message = 'Server waking up, please wait...';
     return (
       <View style={styles.errorRoot}>
         <Text style={styles.errorTitle}>Couldn&apos;t load wallpapers</Text>
-        <Text style={styles.errorSubtitle}>{String(message)}</Text>
+        <Text style={styles.errorSubtitle}>{message}</Text>
       </View>
     );
   }
@@ -80,8 +94,14 @@ export function HomeScreen({ navigation }: Props) {
         contentContainerStyle={styles.listContent}
         onRefresh={refetch}
         refreshing={isFetching && wallpapers.length > 0}
+        onEndReached={onEndReached}
+        onEndReachedThreshold={0.5}
         ListFooterComponent={
-          isFetching && wallpapers.length > 0 ? (
+          isFetchingNextPage ? (
+            <View style={styles.footer}>
+              <ActivityIndicator color={colors.textPrimary} />
+            </View>
+          ) : isFetching && wallpapers.length > 0 ? (
             <View style={styles.footer}>
               <ActivityIndicator color={colors.textPrimary} />
             </View>

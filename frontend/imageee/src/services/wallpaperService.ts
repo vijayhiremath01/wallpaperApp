@@ -1,25 +1,30 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
-import { api } from './api';
+import api from './api';
 import type { GetWallpapersResponse, Wallpaper } from '@/types/api.types';
 
-async function fetchWallpapers() {
-  const res = await api.get<GetWallpapersResponse>('/wallpapers', {
-    params: { page: 1, limit: 20 },
-  });
-  return res.data;
-}
+const PAGE_SIZE = 20;
 
 export function useWallpapers() {
-  const query = useQuery({
-    queryKey: ['wallpapers'],
-    queryFn: fetchWallpapers,
+  const query = useInfiniteQuery({
+    queryKey: ['wallpapers', 'infinite', PAGE_SIZE],
+    initialPageParam: 1,
+    queryFn: async ({ pageParam = 1 }) => {
+      const res = await api.get<GetWallpapersResponse>('/wallpapers', {
+        params: { page: pageParam, limit: PAGE_SIZE },
+      });
+      return res.data;
+    },
+    getNextPageParam: (lastPage, allPages) => {
+      const loaded = allPages.reduce((sum, p) => sum + p.data.length, 0);
+      return loaded >= lastPage.total ? undefined : lastPage.page + 1;
+    },
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
     retry: 2,
   });
 
-  const wallpapers: Wallpaper[] = query.data?.data ?? [];
+  const wallpapers: Wallpaper[] = query.data?.pages.flatMap((p) => p.data) ?? [];
 
   return {
     ...query,
