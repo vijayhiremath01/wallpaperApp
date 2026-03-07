@@ -3,9 +3,10 @@ import React, { useCallback, useMemo, useState } from 'react';
 import { Alert, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ArrowLeft, Download } from 'lucide-react-native';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as MediaLibrary from 'expo-media-library';
 
+import { showRewardedAd } from '@/ads/rewardedAd';
 import type { RootStackScreenProps } from '@/navigation/RootNavigator';
 import { colors } from '@/theme/colors';
 import { spacing, radii } from '@/theme/spacing';
@@ -42,13 +43,26 @@ export function PreviewScreen({ navigation, route }: Props) {
         // If tracking fails, still try to download using original URL
       }
 
-      const fs: any = FileSystem;
-      const baseDir: string = fs.cacheDirectory ?? fs.documentDirectory ?? fs.temporaryDirectory ?? '';
-      const fileUri = `${baseDir}${id}.jpg`;
-      const downloadRes = await FileSystem.downloadAsync(url, fileUri);
+      const baseDir = FileSystem.cacheDirectory || FileSystem.documentDirectory || '';
+      const extension = url.split('.').pop()?.split('?')[0] || 'jpg';
+      const fileUri = `${baseDir}${id}.${extension}`;
 
-      const asset = await MediaLibrary.createAssetAsync(downloadRes.uri);
-      await MediaLibrary.createAlbumAsync('Wallpapers', asset, false);
+      const downloadResumable = FileSystem.createDownloadResumable(url, fileUri);
+      const result = await downloadResumable.downloadAsync();
+
+      if (!result?.uri) {
+        throw new Error('Download failed');
+      }
+
+      const asset = await MediaLibrary.createAssetAsync(result.uri);
+
+      let album = await MediaLibrary.getAlbumAsync('Wallpapers');
+
+      if (!album) {
+        album = await MediaLibrary.createAlbumAsync('Wallpapers', asset, false);
+      } else {
+        await MediaLibrary.addAssetsToAlbumAsync([asset], album, false);
+      }
 
       Alert.alert('Saved', 'Wallpaper saved to gallery');
     } catch (e) {
@@ -60,6 +74,11 @@ export function PreviewScreen({ navigation, route }: Props) {
   }, [downloading, id, imageUrl]);
 
   const downloadLabel = useMemo(() => (downloading ? 'Downloading…' : 'Download'), [downloading]);
+  const onDownloadPress = useCallback(() => {
+    showRewardedAd(() => {
+      void onDownload();
+    });
+  }, [onDownload]);
 
   return (
     <View style={styles.root}>
@@ -80,7 +99,7 @@ export function PreviewScreen({ navigation, route }: Props) {
             </View>
           </Pressable>
 
-          <Pressable onPress={onDownload} disabled={downloading} hitSlop={12} style={styles.downloadButton}>
+          <Pressable onPress={onDownloadPress} disabled={downloading} hitSlop={12} style={styles.downloadButton}>
             <View style={[styles.downloadGlass, downloading && styles.downloadDisabled]}>
               <Download size={18} color={colors.textPrimary} />
               <Text style={styles.downloadText}>{downloadLabel}</Text>
@@ -147,4 +166,3 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
 });
-

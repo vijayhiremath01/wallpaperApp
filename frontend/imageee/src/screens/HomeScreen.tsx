@@ -22,7 +22,6 @@ export function HomeScreen({ navigation }: Props) {
     fetchNextPage,
     hasNextPage,
     isError,
-    error,
     refetch,
   } = useWallpapers();
 

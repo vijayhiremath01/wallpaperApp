@@ -8,23 +8,38 @@
     "scheme": "imageee",
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
+
     "ios": {
       "supportsTablet": true
     },
+
     "android": {
+      "package": "com.znozxeee.imageee",
+      "edgeToEdgeEnabled": true,
+      "predictiveBackGestureEnabled": false,
+
+      "permissions": [
+        "INTERNET",
+        "ACCESS_NETWORK_STATE"
+      ],
+
       "adaptiveIcon": {
         "backgroundColor": "#0B0B0B",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+
+      "config": {
+        "googleMobileAdsAppId": "ca-app-pub-2631213106885088~3881165833"
+      }
     },
+
     "web": {
       "output": "single",
       "favicon": "./assets/images/favicon.png"
     },
+
     "plugins": [
       [
         "expo-splash-screen",
@@ -39,9 +54,22 @@
         }
       ]
     ],
+
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+
+    "extra": {
+      "eas": {
+        "projectId": "d9f7520d-f7b3-43dd-8938-4277bc38b103"
+      }
+    },
+
+    "owner": "znozxeee"
+  },
+  "react-native-google-mobile-ads": {
+    "android_app_id": "ca-app-pub-2631213106885088~3881165833",
+    "delay_app_measurement_init": true
   }
 }
