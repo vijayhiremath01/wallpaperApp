@@ -118,54 +118,66 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.background,
   },
+
   safeHeader: {
     backgroundColor: colors.background,
     paddingHorizontal: 12,
     paddingTop: spacing.lg,
     paddingBottom: spacing.md,
   },
+
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     gap: spacing.md,
   },
+
   headerText: {
     flex: 1,
   },
+
   title: {
     ...typography.title,
     color: colors.textPrimary,
   },
+
   subtitle: {
     ...typography.caption,
     color: colors.textSecondary,
     marginTop: 4,
   },
+
   pill: {
     paddingHorizontal: spacing.sm,
     paddingVertical: spacing.sm,
     borderRadius: 16,
     backgroundColor: colors.card,
   },
+
   listContent: {
-    paddingHorizontal: 4,
+    paddingHorizontal: 8,
     paddingBottom: spacing.xxl,
   },
+
   item: {
     flex: 1,
   },
+
   itemLeft: {
     marginRight: 4,
   },
+
   itemRight: {
     marginLeft: 4,
   },
+
   footer: {
     height: 64,
     alignItems: 'center',
     justifyContent: 'center',
   },
+
   errorRoot: {
     flex: 1,
     backgroundColor: colors.background,
@@ -173,12 +185,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 24,
   },
+
   errorTitle: {
     ...typography.title,
     color: colors.textPrimary,
     textAlign: 'center',
     marginBottom: 8,
   },
+
   errorSubtitle: {
     ...typography.body,
     color: colors.textSecondary,

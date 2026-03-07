@@ -3,15 +3,26 @@ const { redisClient } = require("../config/redis");
 
 async function invalidateWallpapersCache() {
   try {
-    const iter = redisClient.scanIterator({ MATCH: "wallpapers:page:*" });
-    for await (const key of iter) {
-      await redisClient.del(key);
+    const keys = [];
+
+    for await (const key of redisClient.scanIterator({
+      MATCH: "wallpapers:page:*",
+      COUNT: 100
+    })) {
+      if (typeof key === "string") {
+        keys.push(key);
+      }
     }
-  } catch (e) {
-    console.error("Failed to invalidate wallpapers cache", e);
+
+    if (keys.length === 0) return;
+
+    await redisClient.del(...keys);
+
+    console.log(`🧹 Deleted ${keys.length} cache keys`);
+  } catch (err) {
+    console.error("Failed to invalidate wallpapers cache", err);
   }
 }
-
 
 // Upload wallpaper
 const uploadImage = async (req, res) => {
