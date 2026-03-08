@@ -1,7 +1,6 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, ListRenderItem, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
 import { LoadingState } from '@/components/LoadingState';
 import { WallpaperCard } from '@/components/WallpaperCard';
 import { useWallpapers } from '@/services/wallpaperService';
@@ -12,6 +11,18 @@ import { typography } from '@/theme/typography';
 import type { RootStackScreenProps } from '@/navigation/RootNavigator';
 
 type Props = RootStackScreenProps<'Home'>;
+
+/* Optimized Fisher-Yates shuffle */
+function shuffleArray<T>(input: readonly T[]): T[] {
+  const arr = input.slice();
+
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = (Math.random() * (i + 1)) | 0;
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+
+  return arr;
+}
 
 export function HomeScreen({ navigation }: Props) {
   const {
@@ -25,6 +36,24 @@ export function HomeScreen({ navigation }: Props) {
     refetch,
   } = useWallpapers();
 
+  const [shuffledWallpapers, setShuffledWallpapers] = useState<Wallpaper[]>([]);
+
+  /* Shuffle when wallpapers load */
+  useEffect(() => {
+    if (wallpapers.length > 0) {
+      setShuffledWallpapers(shuffleArray(wallpapers));
+    }
+  }, [wallpapers]);
+
+  /* Shuffle every 10 minutes */
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setShuffledWallpapers(prev => shuffleArray(prev));
+    }, 10 * 60 * 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   const onPress = useCallback(
     (item: Wallpaper) => {
       navigation.navigate('Preview', { id: item._id, imageUrl: item.imageUrl });
@@ -35,6 +64,7 @@ export function HomeScreen({ navigation }: Props) {
   const renderItem = useCallback<ListRenderItem<Wallpaper>>(
     ({ item, index }) => {
       const isLeft = index % 2 === 0;
+
       return (
         <View style={[styles.item, isLeft ? styles.itemLeft : styles.itemRight]}>
           <WallpaperCard item={item} onPress={onPress} />
@@ -59,6 +89,7 @@ export function HomeScreen({ navigation }: Props) {
           <Text style={styles.title}>Wallpapers</Text>
           <Text style={styles.subtitle}>Dark glass gallery</Text>
         </View>
+
         {isFetching && (
           <View style={styles.pill}>
             <ActivityIndicator size="small" color={colors.textSecondary} />
@@ -70,6 +101,7 @@ export function HomeScreen({ navigation }: Props) {
 
   if (isError && wallpapers.length === 0) {
     const message = 'Server waking up, please wait...';
+
     return (
       <View style={styles.errorRoot}>
         <Text style={styles.errorTitle}>Couldn&apos;t load wallpapers</Text>
@@ -85,16 +117,25 @@ export function HomeScreen({ navigation }: Props) {
   return (
     <View style={styles.root}>
       {ListHeaderComponent}
+
       <FlatList
-        data={wallpapers}
+        data={shuffledWallpapers}
         keyExtractor={keyExtractor}
         renderItem={renderItem}
         numColumns={2}
         contentContainerStyle={styles.listContent}
+
         onRefresh={refetch}
         refreshing={isFetching && wallpapers.length > 0}
+
         onEndReached={onEndReached}
         onEndReachedThreshold={0.5}
+
+        /* Performance improvements */
+        removeClippedSubviews
+        initialNumToRender={10}
+        windowSize={5}
+
         ListFooterComponent={
           isFetchingNextPage ? (
             <View style={styles.footer}>

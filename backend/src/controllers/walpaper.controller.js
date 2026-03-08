@@ -1,3 +1,5 @@
+const mongoose = require("mongoose");
+const imageKit = require("../config/imageKit");
 const Image = require("../models/images.model");
 const { redisClient } = require("../config/redis");
 
@@ -6,10 +8,10 @@ async function invalidateWallpapersCache() {
     const keys = [];
 
     for await (const key of redisClient.scanIterator({
-      MATCH: "wallpapers:page:*",
+      MATCH: "wallpapers:*",
       COUNT: 100
     })) {
-      if (typeof key === "string") {
+      if (typeof key === "string" && key.length > 0) {
         keys.push(key);
       }
     }
@@ -24,10 +26,10 @@ async function invalidateWallpapersCache() {
   }
 }
 
+
 // Upload wallpaper
 const uploadImage = async (req, res) => {
   try {
-    const imageKit = require("../config/imageKit");
 
     if (!req.file) {
       return res.status(400).json({
@@ -45,8 +47,10 @@ const uploadImage = async (req, res) => {
     });
 
     const newImage = await Image.create({
-      imageUrl: uploadResponse.url
+      imageUrl: uploadResponse.url,
+      category: req.body.category || "General"
     });
+
     await invalidateWallpapersCache();
 
     res.status(201).json({
@@ -67,30 +71,34 @@ const uploadImage = async (req, res) => {
 };
 
 
-// Get wallpapers (with pagination)
+// Get wallpapers
 const getWallpapers = async (req, res) => {
   try {
 
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
+    const category = req.query.category;
 
     const skip = (page - 1) * limit;
 
-    const cacheKey = `wallpapers:page:${page}`;
+    const cacheKey = `wallpapers:page:${page}:limit:${limit}:category:${category || "all"}`;
+
     const cached = await redisClient.get(cacheKey);
+
     if (cached) {
-      const parsed = JSON.parse(cached);
-      return res.status(200).json(parsed);
+      return res.status(200).json(JSON.parse(cached));
     }
 
-    const wallpapers = await Image.find()
+    const filter = category ? { category } : {};
+
+    const wallpapers = await Image.find(filter)
       .sort({ createdAt: -1 })
-      .select("imageUrl downloads createdAt")
+      .select("imageUrl downloads createdAt category")
       .skip(skip)
       .limit(limit)
       .lean();
 
-    const total = await Image.countDocuments();
+    const total = await Image.countDocuments(filter);
 
     const payload = {
       success: true,
@@ -99,9 +107,11 @@ const getWallpapers = async (req, res) => {
       total,
       data: wallpapers
     };
+
     await redisClient.set(cacheKey, JSON.stringify(payload), {
       EX: 300
     });
+
     res.status(200).json(payload);
 
   } catch (error) {
@@ -122,11 +132,18 @@ const downloadWallpaper = async (req, res) => {
 
     const { id } = req.params;
 
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid wallpaper ID"
+      });
+    }
+
     const wallpaper = await Image.findByIdAndUpdate(
       id,
       { $inc: { downloads: 1 } },
       { returnDocument: "after" }
-    );
+    ).lean();
 
     if (!wallpaper) {
       return res.status(404).json({

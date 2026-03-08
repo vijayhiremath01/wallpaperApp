@@ -7,19 +7,20 @@ const imageSchema = new mongoose.Schema(
       required: true,
       trim: true
     },
-
+    category: {
+      type: String,
+      default: "General",
+      index: true
+    },
     downloads: {
       type: Number,
-      default: 0
+      default: 0,
+      index: true
     }
   },
-  {
-    timestamps: true
-  }
+  { timestamps: true }
 );
 
 imageSchema.index({ createdAt: -1 });
 
-const Image = mongoose.model("Image", imageSchema);
-
-module.exports = Image;
+module.exports = mongoose.model("Image", imageSchema);
