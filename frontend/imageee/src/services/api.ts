@@ -7,7 +7,7 @@ type NormalizedError = {
 };
 
 const api = axios.create({
-  baseURL: process.env.EXPO_PUBLIC_API_URL,
+  baseURL: "https://imagee-backend.onrender.com/api",
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json',
@@ -15,7 +15,7 @@ const api = axios.create({
 });
 
 // Temporary Log 
-console.log("API URL:", process.env.EXPO_PUBLIC_API_URL);
+console.log("API URL:", "https://imagee-backend.onrender.com/api");
 
 api.interceptors.response.use(
   (response) => response,

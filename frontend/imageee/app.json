@@ -8,30 +8,28 @@
     "scheme": "imageee",
     "userInterfaceStyle": "dark",
     "newArchEnabled": true,
-
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.znozxeee.imageee",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
-
     "android": {
       "package": "com.znozxeee.imageee",
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-
       "permissions": [
         "INTERNET",
         "ACCESS_NETWORK_STATE"
       ],
-
       "config": {
         "googleMobileAdsAppId": "ca-app-pub-2631213106885088~3881165833"
       }
     },
-
     "web": {
       "output": "single"
     },
-
     "plugins": [
       [
         "expo-splash-screen",
@@ -46,21 +44,17 @@
         }
       ]
     ],
-
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
     },
-
     "extra": {
       "eas": {
         "projectId": "d9f7520d-f7b3-43dd-8938-4277bc38b103"
       }
     },
-
     "owner": "znozxeee"
   },
-
   "react-native-google-mobile-ads": {
     "android_app_id": "ca-app-pub-2631213106885088~3881165833",
     "delay_app_measurement_init": true
