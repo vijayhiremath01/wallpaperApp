@@ -7,3 +7,5 @@ const upload = multer({
 })
 
 module.exports = upload;
+
+// to uplaod the file in form-data 

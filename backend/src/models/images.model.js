@@ -24,3 +24,6 @@ const imageSchema = new mongoose.Schema(
 imageSchema.index({ createdAt: -1 });
 
 module.exports = mongoose.model("Image", imageSchema);
+
+
+// Image model 
